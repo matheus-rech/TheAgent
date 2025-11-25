@@ -375,6 +375,38 @@ All 7 extraction modules now use Claude Agent SDK:
 4. Use specific modules for targeted extraction
 5. Use Multi-Source Fuser for papers with supplements/errata
 
+## Documentation
+
+All documentation is organized in the `docs/` folder:
+
+```text
+docs/
+├── migration/           # Agent SDK migration guides
+│   ├── AGENT_SDK_MIGRATION.md
+│   ├── MIGRATION_COMPLETE.md
+│   └── ...
+├── guides/              # Setup and usage guides
+│   ├── GETTING_STARTED.md
+│   ├── QUICK_REFERENCE.md
+│   ├── DEPLOYMENT_GUIDE.md
+│   └── ...
+├── api/                 # Feature documentation
+│   ├── CITATION_EXTRACTION.md
+│   ├── STRUCTURED_EXTRACTION.md
+│   └── ...
+└── RESEARCH_PAPERS.md   # Related research
+```
+
+### Key Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Getting Started](docs/guides/GETTING_STARTED.md) | Quick start guide |
+| [Quick Reference](docs/guides/QUICK_REFERENCE.md) | Common commands and patterns |
+| [Migration Complete](docs/migration/MIGRATION_COMPLETE.md) | Full v0.2.0 migration summary |
+| [Citation Extraction](docs/api/CITATION_EXTRACTION.md) | Citation processing (92.1% accuracy) |
+| [Deployment Guide](docs/guides/DEPLOYMENT_GUIDE.md) | Production deployment |
+
 ## Resources
 
 - [Claude Agent SDK Documentation](https://docs.claude.com/en/api/agent-sdk/typescript)
@@ -393,4 +425,3 @@ MIT
 - [Docling MCP](https://github.com/docling-project/docling-mcp) - Document understanding
 - [pdf-parse](https://www.npmjs.com/package/pdf-parse) - PDF text extraction
 - [TypeScript](https://www.typescriptlang.org/) - Type-safe development
-# TheAgent
