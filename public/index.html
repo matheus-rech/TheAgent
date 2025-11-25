@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheAgent - Medical Research Extraction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #a5b4fc;
+      --secondary: #0f172a;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --bg-input: #334155;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --border: #334155;
+      --glow: rgba(99, 102, 241, 0.4);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* Animated Background */
+    .bg-gradient {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 50%),
+        var(--bg-dark);
+      z-index: -1;
+    }
+
+    /* Header */
+    header {
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+      background: rgba(15, 23, 42, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .logo h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--text-primary), var(--primary-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo span {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-card);
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Grid Layout */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 2rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.1);
+      box-shadow: 0 0 30px var(--glow);
+    }
+
+    .upload-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 1rem;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+
+    .upload-zone h3 {
+      font-size: 1.125rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-zone p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .upload-zone input {
+      display: none;
+    }
+
+    /* File Info */
+    .file-info {
+      display: none;
+      padding: 1rem;
+      background: var(--bg-input);
+      border-radius: 12px;
+      margin-top: 1rem;
+    }
+
+    .file-info.visible {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .file-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--error);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .file-details {
+      flex: 1;
+    }
+
+    .file-name {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .file-size {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .btn-remove {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-remove:hover {
+      background: var(--error);
+      color: white;
+    }
+
+    /* Module Selection */
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .module-checkbox {
+      display: none;
+    }
+
+    .module-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: var(--bg-input);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .module-checkbox:checked + .module-label {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.15);
+    }
+
+    .module-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .module-icon.pdf { background: linear-gradient(135deg, #ef4444, #f97316); }
+    .module-icon.tables { background: linear-gradient(135deg, #3b82f6, #06b6d4); }
+    .module-icon.imaging { background: linear-gradient(135deg, #8b5cf6, #ec4899); }
+    .module-icon.harmonizer { background: linear-gradient(135deg, #10b981, #14b8a6); }
+    .module-icon.citations { background: linear-gradient(135deg, #f59e0b, #eab308); }
+
+    .module-name {
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
+
+    /* Extract Button */
+    .btn-extract {
+      width: 100%;
+      padding: 1rem 2rem;
+      margin-top: 1.5rem;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-extract:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 40px var(--glow);
+    }
+
+    .btn-extract:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* Progress Section */
+    .progress-section {
+      display: none;
+    }
+
+    .progress-section.active {
+      display: block;
+    }
+
+    .progress-bar-container {
+      height: 8px;
+      background: var(--bg-input);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 4px;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Module Progress */
+    .module-progress {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .module-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: var(--bg-input);
+      border-radius: 10px;
+      transition: all 0.3s;
+    }
+
+    .module-item.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-left: 3px solid var(--primary);
+    }
+
+    .module-item.complete {
+      background: rgba(16, 185, 129, 0.15);
+      border-left: 3px solid var(--success);
+    }
+
+    .module-item.error {
+      background: rgba(239, 68, 68, 0.15);
+      border-left: 3px solid var(--error);
+    }
+
+    .module-status {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      background: var(--bg-card);
+    }
+
+    .module-item.active .module-status {
+      background: var(--primary);
+      animation: spin 1s linear infinite;
+    }
+
+    .module-item.complete .module-status {
+      background: var(--success);
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .module-info {
+      flex: 1;
+    }
+
+    .module-info h4 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .module-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Results Panel */
+    .results-panel {
+      height: calc(100vh - 150px);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .results-tabs {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: 0.5rem 1rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 8px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      background: var(--bg-input);
+      color: var(--text-primary);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .results-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    .result-empty {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-muted);
+    }
+
+    .result-empty-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+
+    /* Data Display */
+    .data-section {
+      margin-bottom: 1.5rem;
+    }
+
+    .data-section h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .data-grid {
+      display: grid;
+      gap: 0.5rem;
+    }
+
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      background: var(--bg-input);
+      border-radius: 8px;
+    }
+
+    .data-label {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .data-value {
+      font-weight: 500;
+      font-size: 0.875rem;
+      text-align: right;
+      max-width: 60%;
+      word-break: break-word;
+    }
+
+    /* JSON View */
+    .json-view {
+      background: var(--bg-input);
+      border-radius: 12px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.75rem;
+      overflow-x: auto;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .json-view pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Export Buttons */
+    .export-buttons {
+      display: flex;
+      gap: 0.5rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-export {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-export.json {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-export.csv {
+      background: var(--success);
+      color: white;
+    }
+
+    .btn-export:hover {
+      transform: translateY(-1px);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success { border-left: 4px solid var(--success); }
+    .toast.error { border-left: 4px solid var(--error); }
+    .toast.info { border-left: 4px solid var(--primary); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-input);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--text-muted);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-secondary);
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.3s ease forwards;
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-gradient"></div>
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🧠</div>
+      <div>
+        <h1>TheAgent</h1>
+        <span>Medical Research Extraction v0.2.0</span>
+      </div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      <span id="connectionStatus">Connected</span>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="main-grid">
+      <!-- Left Panel: Upload & Controls -->
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📄 Upload PDF</div>
+          </div>
+          <div class="card-body">
+            <div class="upload-zone" id="uploadZone">
+              <div class="upload-icon">📤</div>
+              <h3>Drop your PDF here</h3>
+              <p>or click to browse files (max 50MB)</p>
+              <input type="file" id="fileInput" accept=".pdf">
+            </div>
+            <div class="file-info" id="fileInfo">
+              <div class="file-icon">📕</div>
+              <div class="file-details">
+                <div class="file-name" id="fileName">-</div>
+                <div class="file-size" id="fileSize">-</div>
+              </div>
+              <button class="btn-remove" id="removeFile">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+          <div class="card-header">
+            <div class="card-title">⚙️ Extraction Modules</div>
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Select modules</span>
+          </div>
+          <div class="card-body">
+            <div class="module-grid">
+              <input type="checkbox" class="module-checkbox" id="mod-full-pdf" value="full-pdf" checked>
+              <label class="module-label" for="mod-full-pdf">
+                <div class="module-icon pdf">📄</div>
+                <span class="module-name">Full-PDF</span>
+              </label>
+
+              <input type="checkbox" class="module-checkbox" id="mod-tables" value="tables" checked>
+              <label class="module-label" for="mod-tables">
+                <div class="module-icon tables">📊</div>
+                <span class="module-name">Tables</span>
+              </label>
+
+              <input type="checkbox" class="module-checkbox" id="mod-imaging" value="imaging" checked>
+              <label class="module-label" for="mod-imaging">
+                <div class="module-icon imaging">🧲</div>
+                <span class="module-name">Imaging</span>
+              </label>
+
+              <input type="checkbox" class="module-checkbox" id="mod-harmonizer" value="harmonizer">
+              <label class="module-label" for="mod-harmonizer">
+                <div class="module-icon harmonizer">📈</div>
+                <span class="module-name">Harmonizer</span>
+              </label>
+
+              <input type="checkbox" class="module-checkbox" id="mod-citations" value="citations" checked>
+              <label class="module-label" for="mod-citations">
+                <div class="module-icon citations">📚</div>
+                <span class="module-name">Citations</span>
+              </label>
+            </div>
+
+            <button class="btn-extract" id="btnExtract" disabled>
+              <span>🚀</span>
+              <span>Start Extraction</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="card progress-section" id="progressSection" style="margin-top: 1.5rem;">
+          <div class="card-header">
+            <div class="card-title">⏳ Extraction Progress</div>
+            <span id="progressPercent" style="font-size: 0.875rem; color: var(--primary);">0%</span>
+          </div>
+          <div class="card-body">
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="progress-text">
+              <span id="progressStep">Waiting...</span>
+              <span id="progressTime">0s</span>
+            </div>
+            <div class="module-progress" id="moduleProgress"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Results -->
+      <div class="card results-panel">
+        <div class="results-tabs">
+          <button class="tab-btn active" data-tab="overview">Overview</button>
+          <button class="tab-btn" data-tab="study">Study</button>
+          <button class="tab-btn" data-tab="tables">Tables</button>
+          <button class="tab-btn" data-tab="imaging">Imaging</button>
+          <button class="tab-btn" data-tab="citations">Citations</button>
+          <button class="tab-btn" data-tab="json">JSON</button>
+        </div>
+        <div class="results-content" id="resultsContent">
+          <div class="result-empty">
+            <div class="result-empty-icon">🔬</div>
+            <p>Upload a PDF and start extraction<br>to see results here</p>
+          </div>
+        </div>
+        <div class="export-buttons" id="exportButtons" style="display: none;">
+          <button class="btn-export json" id="exportJson">
+            <span>📦</span> Export JSON
+          </button>
+          <button class="btn-export csv" id="exportCsv">
+            <span>📑</span> Export CSV
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span id="toastIcon">✓</span>
+    <span id="toastMessage">Success!</span>
+  </div>
+
+  <script>
+    // Socket.IO connection
+    const socket = io();
+    let uploadedFile = null;
+    let extractionResult = null;
+    let startTime = null;
+
+    // DOM Elements
+    const uploadZone = document.getElementById('uploadZone');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    const fileSize = document.getElementById('fileSize');
+    const removeFile = document.getElementById('removeFile');
+    const btnExtract = document.getElementById('btnExtract');
+    const progressSection = document.getElementById('progressSection');
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent = document.getElementById('progressPercent');
+    const progressStep = document.getElementById('progressStep');
+    const progressTime = document.getElementById('progressTime');
+    const moduleProgress = document.getElementById('moduleProgress');
+    const resultsContent = document.getElementById('resultsContent');
+    const exportButtons = document.getElementById('exportButtons');
+    const connectionStatus = document.getElementById('connectionStatus');
+
+    // Socket events
+    socket.on('connect', () => {
+      connectionStatus.textContent = 'Connected';
+      document.querySelector('.status-dot').style.background = 'var(--success)';
+    });
+
+    socket.on('disconnect', () => {
+      connectionStatus.textContent = 'Disconnected';
+      document.querySelector('.status-dot').style.background = 'var(--error)';
+    });
+
+    socket.on('progress', (data) => {
+      progressBar.style.width = `${data.percent}%`;
+      progressPercent.textContent = `${Math.round(data.percent)}%`;
+      progressStep.textContent = data.message;
+      updateTime();
+    });
+
+    socket.on('moduleStart', (data) => {
+      const item = document.querySelector(`[data-module="${data.module}"]`);
+      if (item) {
+        item.classList.remove('pending');
+        item.classList.add('active');
+        item.querySelector('.module-status').innerHTML = '⟳';
+        item.querySelector('p').textContent = 'Processing...';
+      }
+    });
+
+    socket.on('moduleComplete', (data) => {
+      const item = document.querySelector(`[data-module="${data.module}"]`);
+      if (item) {
+        item.classList.remove('active');
+        item.classList.add('complete');
+        item.querySelector('.module-status').innerHTML = '✓';
+        item.querySelector('p').textContent = data.message;
+      }
+    });
+
+    socket.on('moduleError', (data) => {
+      const item = document.querySelector(`[data-module="${data.module}"]`);
+      if (item) {
+        item.classList.remove('active');
+        item.classList.add('error');
+        item.querySelector('.module-status').innerHTML = '✕';
+        item.querySelector('p').textContent = data.error;
+      }
+    });
+
+    socket.on('extractionComplete', (data) => {
+      extractionResult = data;
+      showToast('Extraction complete!', 'success');
+      renderResults(data);
+      exportButtons.style.display = 'flex';
+      btnExtract.disabled = false;
+      btnExtract.innerHTML = '<span>🚀</span><span>Start Extraction</span>';
+    });
+
+    socket.on('error', (data) => {
+      showToast(data.message, 'error');
+      btnExtract.disabled = false;
+      btnExtract.innerHTML = '<span>🚀</span><span>Start Extraction</span>';
+    });
+
+    // File upload handling
+    uploadZone.addEventListener('click', () => fileInput.click());
+
+    uploadZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadZone.classList.add('dragover');
+    });
+
+    uploadZone.addEventListener('dragleave', () => {
+      uploadZone.classList.remove('dragover');
+    });
+
+    uploadZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type === 'application/pdf') {
+        handleFile(file);
+      } else {
+        showToast('Please upload a PDF file', 'error');
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) {
+        handleFile(e.target.files[0]);
+      }
+    });
+
+    removeFile.addEventListener('click', () => {
+      uploadedFile = null;
+      fileInfo.classList.remove('visible');
+      uploadZone.style.display = 'block';
+      btnExtract.disabled = true;
+    });
+
+    async function handleFile(file) {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          uploadedFile = data.filename;
+          fileName.textContent = file.name;
+          fileSize.textContent = formatFileSize(file.size);
+          fileInfo.classList.add('visible');
+          uploadZone.style.display = 'none';
+          btnExtract.disabled = false;
+          showToast('File uploaded successfully', 'success');
+        } else {
+          showToast(data.error || 'Upload failed', 'error');
+        }
+      } catch (error) {
+        showToast('Upload failed: ' + error.message, 'error');
+      }
+    }
+
+    // Start extraction
+    btnExtract.addEventListener('click', () => {
+      if (!uploadedFile) return;
+
+      const modules = Array.from(document.querySelectorAll('.module-checkbox:checked'))
+        .map(cb => cb.value);
+
+      if (modules.length === 0) {
+        showToast('Please select at least one module', 'error');
+        return;
+      }
+
+      startTime = Date.now();
+      btnExtract.disabled = true;
+      btnExtract.innerHTML = '<span>⟳</span><span>Extracting...</span>';
+
+      // Show progress section
+      progressSection.classList.add('active');
+      progressBar.style.width = '0%';
+      progressPercent.textContent = '0%';
+
+      // Initialize module progress
+      moduleProgress.innerHTML = modules.map(mod => `
+        <div class="module-item pending" data-module="${mod}">
+          <div class="module-status">○</div>
+          <div class="module-info">
+            <h4>${getModuleName(mod)}</h4>
+            <p>Waiting...</p>
+          </div>
+        </div>
+      `).join('');
+
+      // Start extraction
+      socket.emit('startExtraction', { filename: uploadedFile, modules });
+    });
+
+    function getModuleName(mod) {
+      const names = {
+        'full-pdf': 'Full-PDF Extractor',
+        'tables': 'Table & Figure Extractor',
+        'imaging': 'Imaging Metrics',
+        'harmonizer': 'Outcome Harmonizer',
+        'citations': 'Citation Extractor'
+      };
+      return names[mod] || mod;
+    }
+
+    function updateTime() {
+      if (startTime) {
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        progressTime.textContent = `${elapsed}s`;
+      }
+    }
+
+    // Results rendering
+    function renderResults(data) {
+      const result = data.data;
+      updateResultsTab('overview', renderOverview(result));
+      updateResultsTab('study', renderStudy(result));
+      updateResultsTab('tables', renderTables(result));
+      updateResultsTab('imaging', renderImaging(result));
+      updateResultsTab('citations', renderCitations(result));
+      updateResultsTab('json', `<div class="json-view"><pre>${JSON.stringify(result, null, 2)}</pre></div>`);
+
+      // Show overview by default
+      showTab('overview');
+    }
+
+    function renderOverview(data) {
+      return `
+        <div class="data-section fade-in">
+          <h3>📊 Extraction Summary</h3>
+          <div class="data-grid">
+            <div class="data-row">
+              <span class="data-label">Study ID</span>
+              <span class="data-value">${data.study_id || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Authors</span>
+              <span class="data-value">${data.authors || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Year</span>
+              <span class="data-value">${data.year || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Tables Found</span>
+              <span class="data-value">${data.tables?.length || 0}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Citations</span>
+              <span class="data-value">${data.citations?.length || 0}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Study Design</span>
+              <span class="data-value">${data.study_design || '-'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderStudy(data) {
+      return `
+        <div class="data-section fade-in">
+          <h3>📖 Study Information</h3>
+          <div class="data-grid">
+            <div class="data-row">
+              <span class="data-label">Title</span>
+              <span class="data-value">${data.title || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Sample Size</span>
+              <span class="data-value">${data.population?.sample_size || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Mean Age</span>
+              <span class="data-value">${data.population?.mean_age || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Intervention</span>
+              <span class="data-value">${data.intervention?.procedure || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Comparator</span>
+              <span class="data-value">${data.comparator || '-'}</span>
+            </div>
+          </div>
+        </div>
+        <div class="data-section fade-in">
+          <h3>📈 Outcomes</h3>
+          <div class="data-grid">
+            <div class="data-row">
+              <span class="data-label">Mortality</span>
+              <span class="data-value">${data.outcomes?.mortality || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">mRS Favorable</span>
+              <span class="data-value">${data.outcomes?.mRS_favorable || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Complications</span>
+              <span class="data-value">${data.outcomes?.complications || '-'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderTables(data) {
+      if (!data.tables || data.tables.length === 0) {
+        return '<div class="result-empty"><p>No tables extracted</p></div>';
+      }
+      return data.tables.map((table, i) => `
+        <div class="data-section fade-in">
+          <h3>📊 Table ${i + 1}: ${table.title || 'Untitled'}</h3>
+          <div class="data-grid">
+            <div class="data-row">
+              <span class="data-label">Page</span>
+              <span class="data-value">${table.page || '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Rows</span>
+              <span class="data-value">${table.rows?.length || 0}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Columns</span>
+              <span class="data-value">${table.headers?.length || 0}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Extraction Method</span>
+              <span class="data-value">${table.extracted_type || '-'}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderImaging(data) {
+      if (!data.imaging) {
+        return '<div class="result-empty"><p>No imaging metrics extracted</p></div>';
+      }
+      const img = data.imaging;
+      return `
+        <div class="data-section fade-in">
+          <h3>🧲 Neuroimaging Metrics</h3>
+          <div class="data-grid">
+            <div class="data-row">
+              <span class="data-label">Infarct Volume</span>
+              <span class="data-value">${img.infarct_volume_ml ? img.infarct_volume_ml + ' mL' : '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Edema Volume</span>
+              <span class="data-value">${img.edema_volume_ml ? img.edema_volume_ml + ' mL' : '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Midline Shift</span>
+              <span class="data-value">${img.midline_shift_mm ? img.midline_shift_mm + ' mm' : '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">Hydrocephalus</span>
+              <span class="data-value">${img.hydrocephalus !== undefined ? (img.hydrocephalus ? 'Yes' : 'No') : '-'}</span>
+            </div>
+            <div class="data-row">
+              <span class="data-label">4th Ventricle Compression</span>
+              <span class="data-value">${img.fourth_ventricle_compression !== undefined ? (img.fourth_ventricle_compression ? 'Yes' : 'No') : '-'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderCitations(data) {
+      if (!data.citations || data.citations.length === 0) {
+        return '<div class="result-empty"><p>No citations extracted</p></div>';
+      }
+      return `
+        <div class="data-section fade-in">
+          <h3>📚 Citations (${data.citations.length} found)</h3>
+          ${data.citations.slice(0, 10).map((cit, i) => `
+            <div class="data-row" style="flex-direction: column; align-items: flex-start; gap: 0.5rem;">
+              <div style="display: flex; justify-content: space-between; width: 100%;">
+                <span class="data-label">[${i + 1}] ${cit.authors}</span>
+                <span style="color: var(--accent); font-size: 0.75rem;">${Math.round(cit.quality_score * 100)}%</span>
+              </div>
+              <span class="data-value" style="text-align: left; max-width: 100%;">${cit.title}</span>
+              <span style="color: var(--text-muted); font-size: 0.75rem;">${cit.journal} (${cit.year})</span>
+            </div>
+          `).join('')}
+          ${data.citations.length > 10 ? `<p style="color: var(--text-muted); margin-top: 1rem;">+ ${data.citations.length - 10} more citations</p>` : ''}
+        </div>
+      `;
+    }
+
+    // Tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => showTab(btn.dataset.tab));
+    });
+
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+      });
+
+      const content = document.getElementById(`tab-${tabName}`);
+      if (content) {
+        resultsContent.innerHTML = content.innerHTML;
+      }
+    }
+
+    function updateResultsTab(tabName, html) {
+      // Store in a hidden element
+      let container = document.getElementById(`tab-${tabName}`);
+      if (!container) {
+        container = document.createElement('div');
+        container.id = `tab-${tabName}`;
+        container.style.display = 'none';
+        document.body.appendChild(container);
+      }
+      container.innerHTML = html;
+    }
+
+    // Export functions
+    document.getElementById('exportJson').addEventListener('click', () => {
+      if (!extractionResult) return;
+      const blob = new Blob([JSON.stringify(extractionResult.data, null, 2)], { type: 'application/json' });
+      downloadBlob(blob, 'extraction-result.json');
+    });
+
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      if (!extractionResult) return;
+      const csv = convertToCSV(extractionResult.data);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      downloadBlob(blob, 'extraction-result.csv');
+    });
+
+    function convertToCSV(data) {
+      const flatData = flattenObject(data);
+      const headers = Object.keys(flatData).join(',');
+      const values = Object.values(flatData).map(v => `"${String(v).replace(/"/g, '""')}"`).join(',');
+      return `${headers}\n${values}`;
+    }
+
+    function flattenObject(obj, prefix = '') {
+      const flattened = {};
+      for (const [key, value] of Object.entries(obj)) {
+        const newKey = prefix ? `${prefix}_${key}` : key;
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          Object.assign(flattened, flattenObject(value, newKey));
+        } else if (Array.isArray(value)) {
+          flattened[newKey] = value.length;
+        } else {
+          flattened[newKey] = value;
+        }
+      }
+      return flattened;
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Utilities
+    function formatFileSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      const toastIcon = document.getElementById('toastIcon');
+      const toastMessage = document.getElementById('toastMessage');
+
+      const icons = { success: '✓', error: '✕', info: 'ℹ' };
+      toastIcon.textContent = icons[type] || icons.info;
+      toastMessage.textContent = message;
+
+      toast.className = `toast ${type} show`;
+
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    // Time updater
+    setInterval(updateTime, 1000);
+  </script>
+</body>
+</html>
