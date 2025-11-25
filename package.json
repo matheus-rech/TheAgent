@@ -1,0 +1,58 @@
+{
+  "name": "theagent",
+  "version": "0.2.0",
+  "description": "Hybrid medical research data extraction agent powered by Claude Agent SDK with MCP integration, hybrid architectures, and intelligent extraction strategies",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "theagent": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "cli": "tsx src/cli.ts"
+  },
+  "keywords": [
+    "medical-research",
+    "systematic-review",
+    "data-extraction",
+    "cerebellar-stroke",
+    "claude-agent",
+    "pdf-processing",
+    "meta-analysis"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "latest",
+    "@anthropic-ai/sdk": "^0.32.0",
+    "commander": "^12.1.0",
+    "pdf-parse": "^1.1.1",
+    "pdf-lib": "^1.17.1",
+    "dotenv": "^16.4.7",
+    "zod": "^3.23.8",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/pdf-parse": "^1.1.4",
+    "@types/xml2js": "^0.4.14",
+    "@typescript-eslint/eslint-plugin": "^8.18.2",
+    "@typescript-eslint/parser": "^8.18.2",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
